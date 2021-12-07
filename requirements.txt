@@ -3,10 +3,11 @@ scipy
 Pillow
 cython
 matplotlib
-scikit-image
+scikit-image==0.16.2
 tensorflow==2.4.1
 keras==2.4.3
 opencv-python
 h5py
 imgaug
 IPython[all]
+Pillow
