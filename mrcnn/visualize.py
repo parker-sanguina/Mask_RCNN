@@ -143,8 +143,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
             caption = "{} {:.3f}".format(label, score) if score else label
         else:
             caption = captions[i]
-        ax.text(x1, y1 + 8, caption,
-                color='w', size=11, backgroundcolor="none")
+        ax.text(x1, y1 + 8, caption, color='w', size=11, backgroundcolor="none")
 
         # Mask
         mask = masks[:, :, i]
@@ -153,8 +152,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
 
         # Mask Polygon
         # Pad to ensure proper polygons for masks that touch image edges.
-        padded_mask = np.zeros(
-            (mask.shape[0] + 2, mask.shape[1] + 2), dtype=np.uint8)
+        padded_mask = np.zeros((mask.shape[0] + 2, mask.shape[1] + 2), dtype=np.uint8)
         padded_mask[1:-1, 1:-1] = mask
         contours = find_contours(padded_mask, 0.5)
         for verts in contours:
@@ -162,9 +160,12 @@ def display_instances(image, boxes, masks, class_ids, class_names,
             verts = np.fliplr(verts) - 1
             p = Polygon(verts, facecolor="none", edgecolor=color)
             ax.add_patch(p)
+
     ax.imshow(masked_image.astype(np.uint8))
     if auto_show:
-        plt.show()
+            plt.show()
+    
+    return masked_image.astype(np.uint8)
 
 
 def display_differences(image,

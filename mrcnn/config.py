@@ -234,3 +234,11 @@ class Config(object):
             if not a.startswith("__") and not callable(getattr(self, a)):
                 print("{:30} {}".format(a, getattr(self, a)))
         print("\n")
+
+    def to_dict(self):
+        """Returns a dictionary object containing all class variables"""
+        output = {}
+        for attr in dir(self):
+            if not attr.startswith("__") and not callable(getattr(self, attr)):
+                output[attr] = getattr(self, attr)
+        return output

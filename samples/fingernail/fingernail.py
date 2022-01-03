@@ -7,7 +7,9 @@ import skimage.draw
 import matplotlib.pyplot as plt
 
 # Root directory of the project
-ROOT_DIR = os.path.abspath("../../")
+#ROOT_DIR = os.path.abspath("../../")
+ROOT_DIR = "/Users/parker/Desktop/Mask_RCNN/"
+#print(ROOT_DIR)
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
@@ -16,7 +18,8 @@ from mrcnn import model as modellib, utils
 from mrcnn import visualize
 
 # Path to trained weights file
-COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "")
+#COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "")
+COCO_WEIGHTS_PATH = 'mask_rcnn_coco.h5'
 
 # Directory to save logs and model checkpoints, if not provided
 # through the command line argument --logs
@@ -45,6 +48,9 @@ class FingernailConfig(Config):
 
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
+
+    # Don't use mini masks as default
+    USE_MINI_MASK = False
 
 class FingernailDataset(utils.Dataset):
 
@@ -81,7 +87,7 @@ class FingernailDataset(utils.Dataset):
         # }
         # We mostly care about the x and y coordinates of each region
         # Note: In VIA 2.0, regions was changed from a dict to a list.
-        annotations = json.load(open(os.path.join(dataset_dir, "train.json")))
+        annotations = json.load(open(os.path.join(dataset_dir, "via_region_data.json")))
         annotations = list(annotations["_via_img_metadata"].values())
 
         # The VIA tool saves images in the JSON even if they don't have any
@@ -169,56 +175,77 @@ def train(model):
                 epochs=30,
                 layers='heads')
 
+def get_ax(rows=1, cols=1, size=16):
+    """Return a Matplotlib Axes array to be used in
+    all visualizations in the notebook. Provide a
+    central point to control graph sizes.
+    
+    Adjust the size attribute to control how big to render images
+    """
+    _, ax = plt.subplots(rows, cols, figsize=(size*cols, size*rows))
+    return ax
+
+
+
 def detect_and_draw(model, image_path=None, video_path=None):
     assert image_path or video_path
+
+    CLASS_NAMES = ['BG', 'fingernail']
 
     # Image or video?
     if image_path:
         # Run model detection and draw mask on image
-        print("Running on {}".format(args.image))
+        #print("Running on {}".format(args.image))
+        print("Running on {}".format(image_path))
         # Read image
-        image = skimage.io.imread(args.image)
+        #image = skimage.io.imread(args.image)
+        image = skimage.io.imread(image_path)
+        image = image[:,:,0:3]
         # Detect objects
         r = model.detect([image], verbose=1)[0]
         # Draw detected masks
-        visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], r['scores'])
+        img_data = visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], r['scores'])
         # Save output
-        file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
-        plt.imsave(file_name)
-    #elif video_path:
-    #    import cv2
-    #    # Video capture
-    #    vcapture = cv2.VideoCapture(video_path)
-    #    width = int(vcapture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    #    height = int(vcapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    #    fps = vcapture.get(cv2.CAP_PROP_FPS)
-    #
-    #    # Define codec and create video writer
-    #    file_name = "splash_{:%Y%m%dT%H%M%S}.avi".format(datetime.datetime.now())
-    #    vwriter = cv2.VideoWriter(file_name,
-    #                              cv2.VideoWriter_fourcc(*'MJPG'),
-    #                              fps, (width, height))
-    #
-    #    count = 0
-    #    success = True
-    #    while success:
-    #        print("frame: ", count)
-    #        # Read next image
-    #        success, image = vcapture.read()
-    #        if success:
-    #            # OpenCV returns images as BGR, convert to RGB
-    #            image = image[..., ::-1]
-    #            # Detect objects
-    #            r = model.detect([image], verbose=0)[0]
-    #            # Color splash
-    #            splash = color_splash(image, r['masks'])
-    #            # RGB -> BGR to save image to video
-    #            splash = splash[..., ::-1]
-    #            # Add image to video writer
-    #            vwriter.write(splash)
-    #            count += 1
-    #    vwriter.release()
-    #print("Saved to ", file_name)
+        file_name = "/Users/parker/Desktop/splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
+        # display_instances used
+        plt.imsave(file_name, img_data)
+    elif video_path:
+        import cv2
+        # Video capture
+        vcapture = cv2.VideoCapture(video_path)
+        width = int(vcapture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(vcapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = vcapture.get(cv2.CAP_PROP_FPS)
+
+        # Define codec and create video writer
+        file_name = "/Users/parker/Desktop/splash_{:%Y%m%dT%H%M%S}.avi".format(datetime.datetime.now())
+        vwriter = cv2.VideoWriter(file_name,
+                                  cv2.VideoWriter_fourcc(*'MJPG'),
+                                  fps, (width, height))
+    
+        count = 0
+        success = True
+        while success:
+            print("frame: ", count)
+            # Read next image
+            success, image = vcapture.read()
+            if success:
+                # OpenCV returns images as BGR, convert to RGB
+                image = image[..., ::-1]
+                # Detect objects
+                r = model.detect([image], verbose=0)[0]
+                # Draw masks
+                # TO DO: change this because it's slow
+                img_data = visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], CLASS_NAMES, r['scores'])
+                # RGB -> BGR to save image to video
+                img_data = img_data[..., ::-1]
+                # Add image to video writer
+                vwriter.write(img_data)
+                count += 1
+
+        vwriter.release()
+        vcapture.release()
+    print("Saved to ", file_name)
 
 ############################################################
 #  Training
@@ -234,10 +261,10 @@ if __name__ == '__main__':
                         metavar="<command>",
                         help="'train' or 'splash'")
     parser.add_argument('--dataset', required=False,
-                        metavar="/path/to/fingernail/dataset/",
+                        metavar="../../datasets/fingernail/train",
                         help='Directory of the Fingernail dataset')
     parser.add_argument('--weights', required=True,
-                        metavar="/path/to/weights.h5",
+                        metavar="../../mask_rcnn_coco.h5",
                         help="Path to weights .h5 file or 'coco'")
     parser.add_argument('--logs', required=False,
                         default=DEFAULT_LOGS_DIR,
@@ -317,3 +344,6 @@ if __name__ == '__main__':
     else:
         print("'{}' is not recognized. "
               "Use 'train' or 'splash'".format(args.command))
+
+    # Command to initiate training
+    # python3 /Users/parker/Desktop/Mask_RCNN/samples/fingernail/fingernail.py train --dataset /Users/parker/Desktop/Mask_RCNN/datasets/fingernail/ --weights coco
