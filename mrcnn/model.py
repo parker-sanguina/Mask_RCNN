@@ -2047,10 +2047,9 @@ class MaskRCNN(object):
                             "For example, use 256, 320, 384, 448, 512, ... etc. ")
 
         # Inputs
-        input_image = KL.Input(
-            shape=[None, None, config.IMAGE_SHAPE[2]], name="input_image")
-        input_image_meta = KL.Input(shape=[config.IMAGE_META_SIZE],
-                                    name="input_image_meta")
+        input_image = KL.Input(shape=[None, None, config.IMAGE_SHAPE[2]], name="input_image")
+        input_image_meta = KL.Input(shape=[config.IMAGE_META_SIZE],name="input_image_meta")
+
         if mode == "training":
             # RPN GT
             input_rpn_match = KL.Input(
@@ -2082,7 +2081,7 @@ class MaskRCNN(object):
                     name="input_gt_masks", dtype=bool)
         elif mode == "inference":
             # Anchors in normalized coordinates
-            input_anchors = KL.Input(shape=[1, None, 4], name="input_anchors")
+            input_anchors = KL.Input(shape=[1, 4], name="input_anchors")
 
         # Build the shared convolutional layers.
         # Bottom-up Layers
@@ -2158,7 +2157,9 @@ class MaskRCNN(object):
             proposal_count=proposal_count,
             nms_threshold=config.RPN_NMS_THRESHOLD,
             name="ROI",
-            config=config)([rpn_class, rpn_bbox, anchors])
+            config=config)([rpn_class, 
+                rpn_bbox, 
+                anchors])
 
         if mode == "training":
             # Class ID mask to mark class IDs supported by the dataset the image
